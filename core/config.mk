@@ -3,6 +3,24 @@
 # current configuration and platform, which
 # are not specific to what is being built.
 
+# These may be used to trace makefile issues without interfering with
+# envsetup.sh.  Usage:
+#   $(call ainfo,some info message)
+#   $(call aerror,some error message)
+ifdef CALLED_FROM_SETUP
+define ainfo
+endef
+define aerror
+endef
+else
+define ainfo
+$(info $(1))
+endef
+define aerror
+$(error $(1))
+endef
+endif
+
 # Only use ANDROID_BUILD_SHELL to wrap around bash.
 # DO NOT use other shells such as zsh.
 ifdef ANDROID_BUILD_SHELL
@@ -41,7 +59,6 @@ SRC_HEADERS := \
 	$(TOPDIR)system/media/audio/include \
 	$(TOPDIR)hardware/libhardware/include \
 	$(TOPDIR)hardware/libhardware_legacy/include \
-	$(TOPDIR)hardware/ril/include \
 	$(TOPDIR)libnativehelper/include \
 	$(TOPDIR)frameworks/native/include \
 	$(TOPDIR)frameworks/native/opengl/include \
@@ -165,6 +182,7 @@ FIND_LEAVES_EXCLUDES := $(addprefix --prune=, $(OUT_DIR) $(SCAN_EXCLUDE_DIRS) .r
 # be device and hardware independent.
 $(call project-set-path-variant,recovery,RECOVERY_VARIANT,bootable/recovery)
 
+-include vendor/extra/BoardConfigExtra.mk
 # The build system exposes several variables for where to find the kernel
 # headers:
 #   TARGET_DEVICE_KERNEL_HEADERS is automatically created for the current
@@ -230,6 +248,7 @@ ifeq ($(TARGET_CPU_ABI),)
   $(error No TARGET_CPU_ABI defined by board config: $(board_config_mk))
 endif
 TARGET_CPU_ABI2 := $(strip $(TARGET_CPU_ABI2))
+include $(BUILD_SYSTEM)/uber.mk
 
 # $(1): os/arch
 define select-android-config-h
@@ -528,18 +547,6 @@ else
 MD5SUM:=md5sum
 endif
 
-# In-place sed is done different in linux than OS X
-ifeq ($(HOST_OS),darwin)
-GSED:=$(shell which gsed)
-ifeq ($(GSED),)
-SED_INPLACE:=sed -i ''
-else
-SED_INPLACE:=gsed -i
-endif
-else
-SED_INPLACE:=sed -i
-endif
-
 APICHECK_CLASSPATH := $(HOST_JDK_TOOLS_JAR)
 APICHECK_CLASSPATH := $(APICHECK_CLASSPATH):$(HOST_OUT_JAVA_LIBRARIES)/doclava$(COMMON_JAVA_PACKAGE_SUFFIX)
 APICHECK_CLASSPATH := $(APICHECK_CLASSPATH):$(HOST_OUT_JAVA_LIBRARIES)/jsilver$(COMMON_JAVA_PACKAGE_SUFFIX)
@@ -555,10 +562,12 @@ endif
 # Rules for QCOM targets
 include $(BUILD_SYSTEM)/qcom_target.mk
 
+# Rules for MTK targets
+include $(BUILD_SYSTEM)/mtk_target.mk
+
 # ###############################################################
 # Set up final options.
 # ###############################################################
-
 HOST_GLOBAL_CFLAGS += $(COMMON_GLOBAL_CFLAGS)
 HOST_RELEASE_CFLAGS += $(COMMON_RELEASE_CFLAGS)
 
@@ -575,7 +584,8 @@ HOST_GLOBAL_LD_DIRS += -L$(HOST_OUT_INTERMEDIATE_LIBRARIES)
 TARGET_GLOBAL_LD_DIRS += -L$(TARGET_OUT_INTERMEDIATE_LIBRARIES)
 
 HOST_PROJECT_INCLUDES:= $(SRC_HEADERS) $(SRC_HOST_HEADERS) $(HOST_OUT_HEADERS)
-TARGET_PROJECT_INCLUDES:= $(SRC_HEADERS) $(TARGET_OUT_HEADERS) \
+TARGET_PROJECT_INCLUDES:= $(SRC_HEADERS) $(TOPDIR)$(call project-path-for,ril)/include \
+		$(TARGET_OUT_HEADERS) \
 		$(TARGET_DEVICE_KERNEL_HEADERS) $(TARGET_BOARD_KERNEL_HEADERS) \
 		$(TARGET_PRODUCT_KERNEL_HEADERS)
 
@@ -706,7 +716,28 @@ endif
 RSCOMPAT_32BIT_ONLY_API_LEVELS := 8 9 10 11 12 13 14 15 16 17 18 19 20
 RSCOMPAT_NO_USAGEIO_API_LEVELS := 8 9 10 11 12 13
 
-# Vendor Sepolicy
-include vendor/du/sepolicy/sepolicy.mk
+# We might want to skip items listed in PRODUCT_COPY_FILES based on
+# various target flags. This is useful for replacing a binary module with one
+# built from source. This should be a list of destination files under $OUT
+#
+TARGET_COPY_FILES_OVERRIDES := \
+    $(addprefix %:, $(strip $(TARGET_COPY_FILES_OVERRIDES)))
+
+ifneq ($(TARGET_COPY_FILES_OVERRIDES),)
+    PRODUCT_COPY_FILES := $(filter-out $(TARGET_COPY_FILES_OVERRIDES), $(PRODUCT_COPY_FILES))
+endif
+
+ifneq ($(TESLA_BUILD),)
+## We need to be sure the global selinux policies are included
+## last, to avoid accidental resetting by device configs
+$(eval include vendor/tesla/sepolicy/sepolicy.mk)
+
+# Include any vendor specific config.mk file
+-include $(TOPDIR)vendor/*/build/core/config.mk
+
+# Include any vendor specific apicheck.mk file
+-include $(TOPDIR)vendor/*/build/core/apicheck.mk
+
+endif
 
 include $(BUILD_SYSTEM)/dumpvar.mk
