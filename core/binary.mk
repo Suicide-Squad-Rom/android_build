@@ -30,6 +30,244 @@ else
   endif
 endif
 
+# Many qcom modules don't correctly set a dependency on the kernel headers. Fix it for them,
+# but warn the user.
+ifneq (,$(findstring $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include,$(LOCAL_C_INCLUDES)))
+  ifeq (,$(findstring $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr,$(LOCAL_ADDITIONAL_DEPENDENCIES)))
+    $(warning $(LOCAL_MODULE) uses kernel headers, but does not depend on them!)
+    LOCAL_ADDITIONAL_DEPENDENCIES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
+  endif
+endif
+
+# Copyright (C) 2014-2015 UBER
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+#################
+# STRICT_ALIASING
+#################
+ifeq ($(STRICT_ALIASING),true)
+ifeq (1,$(words $(filter $(LOCAL_FORCE_DISABLE_STRICT),$(LOCAL_MODULE))))
+ifdef LOCAL_CONLYFLAGS
+LOCAL_CONLYFLAGS += \
+	$(DISABLE_STRICT)
+else
+LOCAL_CONLYFLAGS := \
+	$(DISABLE_STRICT)
+endif
+ifdef LOCAL_CPPFLAGS
+LOCAL_CPPFLAGS += \
+	$(DISABLE_STRICT)
+else
+LOCAL_CPPFLAGS := \
+	$(DISABLE_STRICT)
+endif
+endif
+ifneq (1,$(words $(filter $(LOCAL_DISABLE_STRICT),$(LOCAL_MODULE))))
+ifdef LOCAL_CONLYFLAGS
+LOCAL_CONLYFLAGS += \
+	$(STRICT_ALIASING_FLAGS)
+else
+LOCAL_CONLYFLAGS := \
+	$(STRICT_ALIASING_FLAGS)
+endif
+ifdef LOCAL_CPPFLAGS
+LOCAL_CPPFLAGS += \
+	$(STRICT_ALIASING_FLAGS)
+else
+LOCAL_CPPFLAGS := \
+	$(STRICT_ALIASING_FLAGS)
+endif
+ifndef LOCAL_CLANG
+LOCAL_CONLYFLAGS += \
+	$(STRICT_GCC_LEVEL)
+LOCAL_CPPFLAGS += \
+	$(STRICT_GCC_LEVEL)
+else
+LOCAL_CONLYFLAGS += \
+	$(STRICT_CLANG_LEVEL)
+LOCAL_CPPFLAGS += \
+	$(STRICT_CLANG_LEVEL)
+endif
+endif
+else
+ifeq (1,$(words $(filter $(LOCAL_FORCE_DISABLE_STRICT),$(LOCAL_MODULE))))
+ifdef LOCAL_CONLYFLAGS
+LOCAL_CONLYFLAGS += \
+	$(DISABLE_STRICT)
+else
+LOCAL_CONLYFLAGS := \
+	$(DISABLE_STRICT)
+endif
+ifdef LOCAL_CPPFLAGS
+LOCAL_CPPFLAGS += \
+	$(DISABLE_STRICT)
+else
+LOCAL_CPPFLAGS := \
+	$(DISABLE_STRICT)
+endif
+endif
+endif
+#####
+
+###############
+# KRAIT_TUNINGS
+###############
+ifeq ($(KRAIT_TUNINGS),true)
+ifndef LOCAL_IS_HOST_MODULE
+ifneq (1,$(words $(filter $(LOCAL_DISABLE_KRAIT), $(LOCAL_MODULE))))
+ifdef LOCAL_CONLYFLAGS
+LOCAL_CONLYFLAGS += \
+	$(KRAIT_FLAGS)
+else
+LOCAL_CONLYFLAGS := \
+	$(KRAIT_FLAGS)
+endif
+ifdef LOCAL_CPPFLAGS
+LOCAL_CPPFLAGS += \
+	$(KRAIT_FLAGS)
+else
+LOCAL_CPPFLAGS := \
+	$(KRAIT_FLAGS)
+endif
+endif
+endif
+endif
+#####
+
+################
+# ENABLE_GCCONLY
+################
+ifeq ($(ENABLE_GCCONLY),true)
+ifndef LOCAL_IS_HOST_MODULE
+ifeq ($(LOCAL_CLANG),)
+ifneq (1,$(words $(filter $(LOCAL_DISABLE_GCCONLY), $(LOCAL_MODULE))))
+ifdef LOCAL_CONLYFLAGS
+LOCAL_CONLYFLAGS += \
+	$(GCC_ONLY)
+else
+LOCAL_CONLYFLAGS := \
+	$(GCC_ONLY)
+endif
+ifdef LOCAL_CPPFLAGS
+LOCAL_CPPFLAGS += \
+	$(GCC_ONLY)
+else
+LOCAL_CPPFLAGS := \
+	$(GCC_ONLY)
+endif
+endif
+endif
+endif
+endif
+#####
+
+###############
+# GRAPHITE_OPTS
+###############
+ifeq ($(GRAPHITE_OPTS),true)
+ifndef LOCAL_IS_HOST_MODULE
+ifeq ($(LOCAL_CLANG),)
+ifneq (1,$(words $(filter $(LOCAL_DISABLE_GRAPHITE), $(LOCAL_MODULE))))
+ifdef LOCAL_CONLYFLAGS
+LOCAL_CONLYFLAGS += \
+	$(GRAPHITE_FLAGS)
+else
+LOCAL_CONLYFLAGS := \
+	$(GRAPHITE_FLAGS)
+endif
+
+ifdef LOCAL_CPPFLAGS
+LOCAL_CPPFLAGS += \
+	$(GRAPHITE_FLAGS)
+else
+LOCAL_CPPFLAGS := \
+	$(GRAPHITE_FLAGS)
+endif
+endif
+endif
+endif
+endif
+#####
+
+################
+# CORTEX_TUNINGS
+################
+ifeq ($(CORTEX_TUNINGS),true)
+ifndef LOCAL_IS_HOST_MODULE
+ifneq (1,$(words $(filter $(LOCAL_DISABLE_CORTEX), $(LOCAL_MODULE))))
+ifdef LOCAL_CONLYFLAGS_64
+LOCAL_CONLYFLAGS_64 += \
+	$(CORTEX_FLAGS)
+else
+LOCAL_CONLYFLAGS_64 := \
+	$(CORTEX_FLAGS)
+endif
+ifdef LOCAL_CPPFLAGS_64
+LOCAL_CPPFLAGS_64 += \
+	$(CORTEX_FLAGS)
+else
+LOCAL_CPPFLAGS_64 := \
+	$(CORTEX_FLAGS)
+endif
+endif
+endif
+endif
+#####
+
+##########
+# USE_PIPE
+##########
+ifeq ($(USE_PIPE),true)
+ifneq (1,$(words $(filter $(LOCAL_DISABLE_PIPE), $(LOCAL_MODULE))))
+ifdef LOCAL_CONLYFLAGS
+LOCAL_CONLYFLAGS += \
+	-pipe
+else
+LOCAL_CONLYFLAGS := \
+	-pipe
+endif
+
+ifdef LOCAL_CPPFLAGS
+LOCAL_CPPFLAGS += \
+	-pipe
+else
+LOCAL_CPPFLAGS := \
+	-pipe
+endif
+endif
+endif
+#####
+
+#################
+# MEMORY SANITIZE
+#################
+ifeq ($(ENABLE_SANITIZE),true)
+ ifneq ($(strip $(LOCAL_IS_HOST_MODULE)),true)
+  ifneq ($(strip $(LOCAL_CLANG)),true)
+   ifeq ($(filter $(DISABLE_SANITIZE_LEAK), $(LOCAL_MODULE)),)
+    ifdef LOCAL_CONLYFLAGS
+     LOCAL_CONLYFLAGS += -fsanitize=leak
+    else
+     LOCAL_CONLYFLAGS := -fsanitize=leak
+    endif
+   endif
+  endif
+ endif
+endif
+#####
+
 # The following LOCAL_ variables will be modified in this file.
 # Because the same LOCAL_ variables may be used to define modules for both 1st arch and 2nd arch,
 # we can't modify them in place.
@@ -38,6 +276,7 @@ my_static_libraries := $(LOCAL_STATIC_LIBRARIES)
 my_whole_static_libraries := $(LOCAL_WHOLE_STATIC_LIBRARIES)
 my_shared_libraries := $(LOCAL_SHARED_LIBRARIES)
 my_cflags := $(LOCAL_CFLAGS)
+my_cflags := -w $(filter-out -Wall -Werror -Wextra -Weverything,$(my_cflags))
 my_conlyflags := $(LOCAL_CONLYFLAGS)
 my_cppflags := $(LOCAL_CPPFLAGS)
 my_ldflags := $(LOCAL_LDFLAGS)
@@ -168,6 +407,11 @@ ifdef LOCAL_CLANG_$($(my_prefix)$(LOCAL_2ND_ARCH_VAR_PREFIX)ARCH)
 my_clang := $(strip $(LOCAL_CLANG_$($(my_prefix)$(LOCAL_2ND_ARCH_VAR_PREFIX)ARCH)))
 endif
 
+# Include DragonTC Optimizations
+ifneq ($(DISABLE_DTC_OPTS),true)
+  include $(BUILD_SYSTEM)/dragontc.mk
+endif
+
 # clang is enabled by default for host builds
 # enable it unless we've specifically disabled clang above
 ifdef LOCAL_IS_HOST_MODULE
@@ -183,6 +427,20 @@ ifeq ($(USE_CLANG_PLATFORM_BUILD),true)
     ifeq ($(my_clang),)
         my_clang := true
     endif
+endif
+
+# Add option to make gcc the default for device build
+ifeq ($(USE_GCC_PLATFORM_BUILD),true)
+    ifeq ($(my_clang),true)
+        my_clang := 
+    endif
+endif
+
+# Export compiler type for display
+ifeq ($(my_clang),)
+    my_compiler := gcc
+else
+    my_compiler := clang
 endif
 
 # arch-specific static libraries go first so that generic ones can depend on them
@@ -203,10 +461,6 @@ b_lib :=
 endif
 
 include $(BUILD_SYSTEM)/config_sanitizers.mk
-
-ifeq ($(strip $($(LOCAL_2ND_ARCH_VAR_PREFIX)WITHOUT_$(my_prefix)CLANG)),true)
-  my_clang :=
-endif
 
 # Add in libcompiler_rt for all regular device builds
 ifeq (,$(LOCAL_SDK_VERSION)$(WITHOUT_LIBCOMPILER_RT))
@@ -314,6 +568,14 @@ ifeq ($(NATIVE_COVERAGE),true)
 else
     my_native_coverage := false
 endif
+
+ifeq ($(my_clang),true)
+    my_coverage_lib := $($(LOCAL_2ND_ARCH_VAR_PREFIX)TARGET_LIBPROFILE_RT)
+else
+    my_coverage_lib := $($(LOCAL_2ND_ARCH_VAR_PREFIX)TARGET_LIBGCOV)
+endif
+
+$(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_TARGET_COVERAGE_LIB := $(my_coverage_lib)
 
 ###########################################################
 ## Define PRIVATE_ variables used by multiple module types
@@ -566,11 +828,23 @@ $(proto_generated_headers): $(proto_generated_sources_dir)/%.pb.h: $(proto_gener
 	$(hide) touch $@
 	$(copy-proto-files)
 
+$(if $(LOCAL_PROTOC_OUTPUT), \
+$(if $(call streq,$(LOCAL_PROTOC_OUTPUT),$(LOCAL_PATH)),, \
+  $(eval proto_relocated_headers := $(subst $(LOCAL_PATH),$(LOCAL_PROTOC_OUTPUT),$(proto_generated_headers))) \
+ ), )
+
+ifdef proto_relocated_headers
+$(proto_relocated_headers): $(proto_generated_headers)
+	echo "Refreshed header file $@."
+	$(hide) touch $@
+endif
+
 $(my_prefix)_$(LOCAL_MODULE_CLASS)_$(LOCAL_MODULE)_proto_defined := true
 endif  # transform-proto-to-cc rule included only once
 
 $(proto_generated_objects): PRIVATE_ARM_MODE := $(normal_objects_mode)
 $(proto_generated_objects): PRIVATE_ARM_CFLAGS := $(normal_objects_cflags)
+$(proto_generated_objects): PRIVATE_COMPILER_ID := $(my_compiler)
 $(proto_generated_objects): $(proto_generated_obj_dir)/%.o: $(proto_generated_sources_dir)/%$(my_proto_source_suffix) $(proto_generated_headers)
 ifeq ($(my_proto_source_suffix),.c)
 	$(transform-$(PRIVATE_HOST)c-to-o)
@@ -637,6 +911,7 @@ endif
 ifneq ($(strip $(yacc_cpps)),)
 $(yacc_objects): PRIVATE_ARM_MODE := $(normal_objects_mode)
 $(yacc_objects): PRIVATE_ARM_CFLAGS := $(normal_objects_cflags)
+$(yacc_objects): PRIVATE_COMPILER_ID := $(my_compiler)
 $(yacc_objects): $(intermediates)/%.o: $(intermediates)/%$(LOCAL_CPP_EXTENSION)
 	$(transform-$(PRIVATE_HOST)cpp-to-o)
 endif
@@ -671,6 +946,7 @@ endif
 ifneq ($(strip $(lex_cpps)),)
 $(lex_objects): PRIVATE_ARM_MODE := $(normal_objects_mode)
 $(lex_objects): PRIVATE_ARM_CFLAGS := $(normal_objects_cflags)
+$(lex_objects): PRIVATE_COMPILER_ID := $(my_compiler)
 $(lex_objects): $(intermediates)/%.o: \
     $(intermediates)/%$(LOCAL_CPP_EXTENSION) \
     $(my_additional_dependencies) \
@@ -709,8 +985,10 @@ cpp_normal_objects := $(addprefix $(intermediates)/,$(cpp_normal_sources:$(LOCAL
 
 $(dotdot_arm_objects) $(cpp_arm_objects): PRIVATE_ARM_MODE := $(arm_objects_mode)
 $(dotdot_arm_objects) $(cpp_arm_objects): PRIVATE_ARM_CFLAGS := $(arm_objects_cflags)
+$(dotdot_arm_objects) $(cpp_arm_objects): PRIVATE_COMPILER_ID := $(my_compiler)
 $(dotdot_objects) $(cpp_normal_objects): PRIVATE_ARM_MODE := $(normal_objects_mode)
 $(dotdot_objects) $(cpp_normal_objects): PRIVATE_ARM_CFLAGS := $(normal_objects_cflags)
+$(dotdot_objects) $(cpp_normal_objects): PRIVATE_COMPILER_ID := $(my_compiler)
 
 cpp_objects        := $(cpp_arm_objects) $(cpp_normal_objects)
 
@@ -737,6 +1015,7 @@ ifneq ($(strip $(gen_cpp_objects)),)
 # TODO: support compiling certain generated files as arm.
 $(gen_cpp_objects): PRIVATE_ARM_MODE := $(normal_objects_mode)
 $(gen_cpp_objects): PRIVATE_ARM_CFLAGS := $(normal_objects_cflags)
+$(gen_cpp_objects): PRIVATE_COMPILER_ID := $(my_compiler)
 $(gen_cpp_objects): $(intermediates)/%.o: \
     $(intermediates)/%$(LOCAL_CPP_EXTENSION) $(yacc_cpps) \
     $(proto_generated_headers) \
@@ -806,8 +1085,10 @@ c_normal_objects := $(addprefix $(intermediates)/,$(c_normal_sources:.c=.o))
 
 $(dotdot_arm_objects) $(c_arm_objects): PRIVATE_ARM_MODE := $(arm_objects_mode)
 $(dotdot_arm_objects) $(c_arm_objects): PRIVATE_ARM_CFLAGS := $(arm_objects_cflags)
+$(dotdot_arm_objects) $(c_arm_objects): PRIVATE_COMPILER_ID := $(my_compiler)
 $(dotdot_objects) $(c_normal_objects): PRIVATE_ARM_MODE := $(normal_objects_mode)
 $(dotdot_objects) $(c_normal_objects): PRIVATE_ARM_CFLAGS := $(normal_objects_cflags)
+$(dotdot_objects) $(c_normal_objects): PRIVATE_COMPILER_ID := $(my_compiler)
 
 c_objects        := $(c_arm_objects) $(c_normal_objects)
 
@@ -832,6 +1113,7 @@ ifneq ($(strip $(gen_c_objects)),)
 # TODO: support compiling certain generated files as arm.
 $(gen_c_objects): PRIVATE_ARM_MODE := $(normal_objects_mode)
 $(gen_c_objects): PRIVATE_ARM_CFLAGS := $(normal_objects_cflags)
+$(gen_c_objects): PRIVATE_COMPILER_ID := $(my_compiler)
 $(gen_c_objects): $(intermediates)/%.o: $(intermediates)/%.c $(yacc_cpps) $(proto_generated_headers) \
     $(my_additional_dependencies)
 	$(transform-$(PRIVATE_HOST)c-to-o)
@@ -978,11 +1260,6 @@ my_c_includes := $(TOPDIR)$(TARGET_SPECIFIC_HEADER_PATH) $(my_c_includes)
 endif
 
 my_c_includes += $(TOPDIR)$(LOCAL_PATH) $(intermediates) $(generated_sources_dir)
-
-## Allow a device's own headers to take precedence over global ones
-ifneq ($(TARGET_SPECIFIC_HEADER_PATH),)
-LOCAL_C_INCLUDES += $(TOPDIR)$(TARGET_SPECIFIC_HEADER_PATH)
-endif
 
 ifndef LOCAL_SDK_VERSION
   my_c_includes += $(JNI_H_INCLUDE)
