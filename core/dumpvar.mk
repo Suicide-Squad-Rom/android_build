@@ -62,15 +62,10 @@ endif
 endif # CALLED_FROM_SETUP
 
 
+
 ifneq ($(PRINT_BUILD_CONFIG),)
 HOST_OS_EXTRA:=$(shell python -c "import platform; print(platform.platform())")
-$(info =======================================================)
-$(info  ___  _     _        _   _      _                      ")
-$(info |   \(_)_ _| |_ _  _| | | |_ _ (_)__ ___ _ _ _ _  ___  ")
-$(info | |) | | '_|  _| || | |_| | ' \| / _/ _ \ '_| ' \(_-<  ")
-$(info |___/|_|_|  \__|\_, |\___/|_||_|_\__\___/_| |_||_/__/  ")
-$(info                 |__/                                   ")
-$(info =======================================================)
+$(info ============================================)
 $(info   DU_VERSION=$(DU_VERSION))
 $(info   TARGET_PRODUCT=$(TARGET_PRODUCT))
 $(info   TARGET_BUILD_VARIANT=$(TARGET_BUILD_VARIANT))
@@ -80,7 +75,7 @@ $(info   TARGET_GCC_VERSION=$(TARGET_GCC_VERSION))
 $(info   TARGET_NDK_GCC_VERSION=$(TARGET_NDK_GCC_VERSION))
 $(info   TARGET_ARCH_VARIANT=$(TARGET_ARCH_VARIANT))
 $(info   TARGET_CPU_VARIANT=$(TARGET_CPU_VARIANT))
-$(info =====================================================)
+$(info ==============================================)
 ifeq ($(TARGET_DRAGONTC_VERSION),)
 else
 $(info   CLANG_VERSION=$(DTC_VER))
@@ -92,12 +87,12 @@ $(info   TARGET_KERNEL_TOOLCHAIN=$(TARGET_GCC_VERSION_ARM))
 else
 $(info   TARGET_KERNEL_TOOLCHAIN=$(TARGET_GCC_VERSION))
 endif
-$(info =====================================================)
+$(info ===============================================)
 $(info   HOST_ARCH=$(HOST_ARCH))
 $(info   HOST_OS=$(HOST_OS))
 $(info   HOST_OS_EXTRA=$(HOST_OS_EXTRA))
 $(info   HOST_BUILD_TYPE=$(HOST_BUILD_TYPE))
 $(info   BUILD_ID=$(BUILD_ID))
 $(info   OUT_DIR=$(OUT_DIR))
-$(info ============================================)
+$(info ===============================================)
 endif
